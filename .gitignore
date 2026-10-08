@@ -199,8 +199,15 @@ pyrightconfig.json
 
 !datasets/gemini_logo_mask.png
 
+# Ignore .idea files
+*.idea
+
 # Ignore JSON files
 *.json
+
+# Ignore model files
+*.pth
+*.pt
 
 # Ignore a specific Jupyter notebook
 plots.ipynb

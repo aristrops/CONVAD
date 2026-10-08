@@ -1,6 +1,6 @@
 from models.model_backbones import BackboneModel, MLP, End2EndModel
 
-def joint_model(num_attr, expand_dim, freeze_parameters, use_relu = False, use_sigmoid = False, backbone = "resnet18", model_state_dict = None, mode = "train", concept_intervention = False):
+def joint_model(num_attr, expand_dim = 0, freeze_parameters = False, use_relu = False, use_sigmoid = False, backbone = "mobilenet_v2", model_state_dict = None, mode = "train", concept_intervention = False):
     model_1 = BackboneModel(num_attr=num_attr, num_classes = 1, freeze_parameters=freeze_parameters, expand_dim=expand_dim, bottleneck=True, backbone = backbone)
     if mode == "train":
         filtered_dict = {k: v for k, v in model_state_dict.items() if not k.startswith('fc_layers.0')}
@@ -36,7 +36,7 @@ def joint_model(num_attr, expand_dim, freeze_parameters, use_relu = False, use_s
         return full_model
 
 
-def standard_model(freeze_parameters, backbone = "resnet18", model_state_dict = None, num_classes = 1, mode = "train"): #for label prediction without using attributes
+def standard_model(freeze_parameters, backbone = "mobilenet_v2", model_state_dict = None, num_classes = 1, mode = "train"): #for label prediction without using attributes
     model = BackboneModel(num_attr=None, num_classes=num_classes, freeze_parameters=freeze_parameters, backbone = backbone)
     print(f"Using {backbone} for prediction...")
     if model_state_dict is not None:
@@ -52,7 +52,7 @@ def standard_model(freeze_parameters, backbone = "resnet18", model_state_dict = 
             model.load_state_dict(model_state_dict)
     return model
 
-def concepts_model(num_attr, freeze_parameters, expand_dim, backbone = "resnet18", model_state_dict = None, mode = "train"): #for concept prediction in independent and sequential model
+def concepts_model(num_attr, freeze_parameters = False, expand_dim = 0, backbone = "mobilenet_v2", model_state_dict = None, mode = "train"): #for concept prediction in independent and sequential model
     model = BackboneModel(num_attr=num_attr, num_classes=1, freeze_parameters=freeze_parameters, expand_dim=expand_dim, bottleneck=True, backbone=backbone)
     if mode == "train":
         filtered_dict = {k: v for k, v in model_state_dict.items() if not k.startswith('fc_layers.0')}
@@ -69,7 +69,7 @@ def concepts_model(num_attr, freeze_parameters, expand_dim, backbone = "resnet18
 
     return model
 
-def main_model(num_attr, expand_dim, model_state_dict = None): #for main prediction in independent and sequential model
+def main_model(num_attr, expand_dim = 0, model_state_dict = None): #for main prediction in independent and sequential model
     model = MLP(input_dim=num_attr, expand_dim=expand_dim)
     if model_state_dict is not None:
         model.load_state_dict(model_state_dict) 
