@@ -12,11 +12,23 @@ from models.full_models import joint_model, standard_model, concepts_model, main
 from trainers.trainer_cbm import CBMTrainer
 from evaluators.evaluator_cbm import CBMEvaluator
 
+def read_concept_csv(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
+    base = os.path.dirname(os.path.abspath(csv_path))
+
+    def resolve(p):
+        if pd.isna(p) or p == "":
+            return p  # good images have no mask
+        return os.path.normpath(os.path.join(base, p))
+
+    for col in ("image_path", "mask_path"):
+        if col in df.columns:
+            df[col] = df[col].apply(resolve)
+    return df
 
 def train_model(category: str,
-                dataframe_path: str, #main training dataframe path
-                dataframe_path_original: str, #path to dataframe with real anomalies, when contaminating
-                subsample_anomalies: bool,
+                dataset_path: str, #main training dataframe path
+                use_gen_anomalies: bool,
                 contaminate: bool,  #add some original images to the training set of generated anomalies
                 n_per_type: int,  #number of original images per defect to add
                 model_type: str,
@@ -40,29 +52,38 @@ def train_model(category: str,
         return opt, scheduler
 
     # construct save path
-    if save_dir:
-        if model_type in ["sequential", "independent"]:
-            os.makedirs(os.path.join(save_dir, "main"), exist_ok=True)
-            os.makedirs(os.path.join(save_dir, "concepts"), exist_ok=True)
+    if use_gen_anomalies:
+        file_name = "unsupervised_model.pth"
+        if contaminate:
+            file_name = f"semisupervised_{n_per_type}_model.pth"
+    else:
+        file_name = "supervised_model.pth"
 
+    if save_dir:
         if model_type =="joint":
-            save_path = os.path.join(save_dir, "main_task.pth")
+            save_path = os.path.join(save_dir, file_name)
         elif model_type in ["sequential", "independent"]:
-            save_path = os.path.join(save_dir, "main_task.pth")
-            save_path_concepts = os.path.join(save_dir, "concepts.pth")
+            save_path = os.path.join(save_dir, file_name)
+            save_path_concepts = os.path.join(save_dir, f"concepts_{file_name}.pth")
     else:
         save_path = None
 
     print(f"\nTraining {model_type} model for {category} category...")
 
-    dataframe = pd.read_csv(dataframe_path)
-    dataframe_original = pd.read_csv(dataframe_path_original) if contaminate else None
+    if use_gen_anomalies:
+        dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset_gen.csv")
+        if contaminate:
+            dataframe_path_original = os.path.join(dataset_path, category, "concepts", f"{category}_dataset_gen_to_real.csv")
+    else:
+        dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset.csv")
+
+    dataframe = read_concept_csv(dataframe_path)
+    dataframe_original = read_concept_csv(dataframe_path_original) if contaminate else None
 
     state_dict = torch.load(model_path) if model_path else None
 
     train_dataset = ConceptDataset(dataframe, "train", contaminate=contaminate,
-                                   n_per_type=n_per_type, subsample_anomalies=subsample_anomalies,
-                                   original_df=dataframe_original, random_state=seed)
+                                   n_per_type=n_per_type, original_df=dataframe_original, random_state=seed)
     val_dataset = ConceptDataset(dataframe, "val", random_state=seed)
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size)
@@ -73,8 +94,7 @@ def train_model(category: str,
     if model_type == "independent":
         #build dataset without images for main task prediction
         train_dataset_no_img = ConceptDataset(dataframe, "train", load_image=False, contaminate=contaminate,
-                                            n_per_type=n_per_type, subsample_anomalies=subsample_anomalies,
-                                            original_df=dataframe_original, random_state=seed)
+                                            n_per_type=n_per_type, original_df=dataframe_original, random_state=seed)
         val_dataset_no_img = ConceptDataset(dataframe, "val", load_image=False, random_state=seed)
 
         train_dataloader_no_img = torch.utils.data.DataLoader(train_dataset_no_img, batch_size)
@@ -125,8 +145,7 @@ def train_model(category: str,
             dataframe_new = generate_concept_logits(concept_model, dataframe, save_path=save_path_pred_concepts, device=device)
 
             train_dataset_no_img = ConceptDataset(dataframe_new, "train", load_image=False, contaminate=contaminate,
-                                                n_per_type=n_per_type, subsample_anomalies=subsample_anomalies,
-                                                original_df=dataframe_original, random_state=seed)
+                                                n_per_type=n_per_type, original_df=dataframe_original, random_state=seed)
             val_dataset_no_img = ConceptDataset(dataframe_new, "val", load_image=False, random_state=seed)
 
             train_dataloader_no_img = torch.utils.data.DataLoader(train_dataset_no_img, batch_size)
@@ -143,25 +162,42 @@ def train_model(category: str,
 
 
 def test_model(category: str,
-               dataframe_path: str,
+               dataset_path: str,
+               use_gen_anomalies: bool,
+               contaminate: bool,
+               n_per_type: int,
                model_type: str,
                save_dir: str,
                device: torch.device,
                batch_size: int = 16,
                use_concepts: bool = True,
                mode: str = "eval",
-               image_path: str = None,
-               use_gen_anomalies: bool = False):
+               image_path: str = None,):
+
+    # construct save path
+    if use_gen_anomalies:
+        file_name = "unsupervised_model.pth"
+        if contaminate:
+            file_name = f"semisupervised_{n_per_type}_model.pth"
+    else:
+        file_name = "supervised_model.pth"
 
     if model_type == "joint":
-        save_path = os.path.join(save_dir, "main_task.pth")
+        save_path = os.path.join(save_dir, file_name)
+        save_path_concepts = None
     elif model_type in ["sequential", "independent"]:
-        save_path = os.path.join(save_dir, "main_task.pth")
-        save_path_concepts = os.path.join(save_dir, "concepts.pth")
+        save_path = os.path.join(save_dir, file_name)
+        save_path_concepts = os.path.join(save_dir, f"concepts_{file_name}.pth")
+
 
     print(f"\nTesting {model_type} model for {category} category...")
 
-    dataframe = pd.read_csv(dataframe_path)
+    if use_gen_anomalies:
+        dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset_gen_to_real.csv")
+    else:
+        dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset.csv")
+
+    dataframe = read_concept_csv(dataframe_path)
 
     print(f"Loading state dict from {save_path}")
 
@@ -262,12 +298,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--mode", type=str, choices=["train", "eval", "inference"], help="Whether to train, test or perform inference on one image")
-    parser.add_argument("--dataframe_path", type=str, required=True, help="Path to dataframe")
-    parser.add_argument("--dataframe_path_original", type=str, help="Path to original dataframe to add original images")
-    parser.add_argument("--subsample_anomalies", action="store_true",
-                        help="Whether to use a reduced number of anomalous images per defect type")
+    parser.add_argument("--dataset_path", type=str, required=True, help="Path to dataset")
+    parser.add_argument("--use_gen_anomalies", action="store_true", help="Unsupervised or semi-supervised scenario: use generated anomalies to train")
     parser.add_argument("--contaminate", action="store_true",
-                        help="Whether to contaminate the generated dataset with some original anomalous samples")
+                        help="Semi-supervised scenario: contaminate the generated dataset with some original anomalous samples")
     parser.add_argument("--n_per_type", type=int, default=0,
                         help="How many original images to add to the generated dataset")
     parser.add_argument("--model_type", type=str, nargs="+",
@@ -285,8 +319,6 @@ def main():
     parser.add_argument("--save_path_pred_concepts", action="store_true", help="Whether to save the predicted concepts dataframe here")
     parser.add_argument("--seed", type=int, default=42, help="Execution seed")
     parser.add_argument("--image_path", default=None, help="Path of the image to perform inference on")
-    parser.add_argument("--use_gen_anomalies", action="store_true",
-                        help="Perform training on dataset with generated anomalies")
     parser.add_argument("--gemini_logo_mask_path", default=None,
                         help="Path to the Gemini logo mask to be applied to all images")
 
@@ -299,14 +331,13 @@ def main():
     device = torch.device(args.device)
 
     for model_type in args.model_type:
-        model_save_dir = os.path.join(args.save_dir, model_type) if args.save_dir else None
+        model_save_dir = os.path.join(args.save_dir, args.category, model_type) if args.save_dir else None
 
         if args.mode == "train":
             os.makedirs(model_save_dir, exist_ok=True) if args.save_dir else None
             train_model(category=args.category,
-                        dataframe_path=args.dataframe_path,
-                        dataframe_path_original=args.dataframe_path_original,
-                        subsample_anomalies=args.subsample_anomalies,
+                        dataset_path=args.dataset_path,
+                        use_gen_anomalies=args.use_gen_anomalies,
                         contaminate=args.contaminate,
                         n_per_type=args.n_per_type,
                         model_type=model_type,
@@ -322,15 +353,16 @@ def main():
                         seed=args.seed)
         else:
             auc_main, auc_attr, f1_main, f1_attr = test_model(category=args.category,
-                                                              dataframe_path=args.dataframe_path,
+                                                              dataset_path=args.dataset_path,
+                                                              use_gen_anomalies=args.use_gen_anomalies,
+                                                              contaminate=args.contaminate,
+                                                              n_per_type=args.n_per_type,
                                                               model_type=model_type,
                                                               save_dir=model_save_dir,
                                                               device=device,
                                                               batch_size=args.batch_size,
                                                               mode=args.mode,
-                                                              image_path=args.image_path,
-                                                              use_gen_anomalies=args.use_gen_anomalies,
-                                                              seed=args.seed)
+                                                              image_path=args.image_path)
 
 
 if __name__ == "__main__":
