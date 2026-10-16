@@ -168,7 +168,7 @@ class FC(nn.Module):
 
 # feature extractor model for STFPM
 class BackboneModelFeatures(nn.Module):
-    def __init__(self, pretrained: bool = True, backbone: str = "resnet18"):
+    def __init__(self, pretrained: bool = True, backbone: str = "mobilenet_v2"):
         super(BackboneModelFeatures, self).__init__()
 
         self.backbone = backbone

@@ -170,7 +170,6 @@ def test_model(category: str,
                save_dir: str,
                device: torch.device,
                batch_size: int = 16,
-               use_concepts: bool = True,
                mode: str = "eval",
                image_path: str = None,):
 
@@ -234,7 +233,7 @@ def test_model(category: str,
 
         # repeated code
         test_dataset = ConceptDataset(test_df, "test")
-        num_attr = len(test_dataset.attr_cols) if use_concepts else None
+        num_attr = len(test_dataset.attr_cols)
         attr_cols = test_dataset.attr_cols
         val_dataset = ConceptDataset(test_df, "val")
         train_dataset = ConceptDataset(test_df, "train")
@@ -252,7 +251,7 @@ def test_model(category: str,
 
         model.to(device)
 
-        evaluator = CBMEvaluator(model, num_attr, attr_cols, test_dataloader, device, concepts=use_concepts)
+        evaluator = CBMEvaluator(model, num_attr, attr_cols, test_dataloader, device)
 
         if mode == "eval":
             auc_main, f1_main, auc_attr, f1_attr, image_preds = evaluator.evaluate()
@@ -331,7 +330,7 @@ def main():
     device = torch.device(args.device)
 
     for model_type in args.model_type:
-        model_save_dir = os.path.join(args.save_dir, args.category, model_type) if args.save_dir else None
+        model_save_dir = os.path.join(args.save_dir, args.category, "cbm", model_type) if args.save_dir else None
 
         if args.mode == "train":
             os.makedirs(model_save_dir, exist_ok=True) if args.save_dir else None

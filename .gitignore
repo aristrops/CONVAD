@@ -196,6 +196,8 @@ pyrightconfig.json
 *.png
 *.jpg
 *.jpeg
+*.csv
+*.txt
 
 !datasets/gemini_logo_mask.png
 
@@ -204,10 +206,6 @@ pyrightconfig.json
 
 # Ignore JSON files
 *.json
-
-# Ignore model files
-*.pth
-*.pt
 
 # Ignore a specific Jupyter notebook
 plots.ipynb

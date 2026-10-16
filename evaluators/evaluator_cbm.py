@@ -29,7 +29,7 @@ class CBMEvaluator:
         self.main_only = main_only
     
     #-------Function to evaluate model performance on test set---------
-    def evaluate(self):
+    def evaluate(self, return_scores = False):
         self.model.eval()
 
         accuracy_meter_main = AverageMeter()
@@ -101,6 +101,7 @@ class CBMEvaluator:
         if not self.bottleneck and all_main_probs is not None:
             all_main_targets = torch.cat(all_main_targets).numpy()
             all_main_probs = torch.cat(all_main_probs).numpy()
+            image_scores = all_main_probs
 
             #compute main F1 score
             f1_main, best_thresh_main = compute_image_f1(all_main_targets, all_main_probs)
@@ -112,6 +113,7 @@ class CBMEvaluator:
         else:
             f1_main = 0
             auc_main = 0
+            image_scores = np.array([])
 
         if all_attr_probs:
             all_attr_probs = torch.cat(all_attr_probs).numpy()
@@ -175,8 +177,9 @@ class CBMEvaluator:
         else:
             if self.main_only:
                 return auc_main, f1_main
-            else:
-                return auc_main, f1_main, mean_auc, f1_attr, main_preds
+            if return_scores:
+                return auc_main, f1_main, mean_auc, f1_attr, main_preds, image_scores
+        return auc_main, f1_main, mean_auc, f1_attr, main_preds
     
     
     #-----Function to perform inference on a single image-------

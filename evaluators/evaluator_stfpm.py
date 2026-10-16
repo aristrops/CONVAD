@@ -92,7 +92,7 @@ class STFPMEvaluator:
         plt.close()
         
     #-------Function to evaluate model performance on test set---------
-    def evaluate(self):
+    def evaluate(self, return_scores = False):
 
         self.teacher_model.eval()
         self.student_model.eval()
@@ -156,4 +156,6 @@ class STFPMEvaluator:
               f"Pixel PRO = {pixel_pro:.4f}, Pixel PR = {pixel_pr:.4f}")
         print(f"Image AUC = {image_auc:.4f}, Image F1-max = {image_f1_max:.4f} (at threshold = {best_thresh:.4f})")
 
+        if return_scores:
+            return image_auc, image_f1_max, image_preds, pixel_auc, image_scores
         return image_auc, image_f1_max, image_preds
