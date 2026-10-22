@@ -20,7 +20,10 @@ The repository is organized as follows:
   * Visual branch training/testing (`stfpm.py`)
   * Evaluating the full pipeline with the production of combined metrics (`combined_branches.py`)
 
-See `main.sh` for an example of how to run the main scripts.
+See `main.sh` for an example of how to run the main scripts. Alternatively, you can run the code from terminal as:
+```
+python -m main_scripts.cbm --mode train --dataset_path CONVAD-MVTec --model_type joint --save_dir cbm_models --category bottle --device cpu --model_path cbm_models/backbone/fine-tuned-mobilenet.pth --gemini_logo_mask_path datasets/gemini_logo_mask.png                         
+```
 
 
 ## Dataset
