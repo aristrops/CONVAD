@@ -117,8 +117,8 @@ class MVTecDataset(IadDataset):
 
         if use_gen_anomalies and self.split == Split.TEST:
             # redirect test root to the generated anomaly directory
-            gen_root = root / "test" / "generated_anomalies"
-            if not gen_root.exists:
+            gen_root = root / "generated_anomalies"
+            if not gen_root.exists():
                 raise FileNotFoundError(
                     f"Generated anomalies directory not found: {gen_root}"
                 )
@@ -136,7 +136,7 @@ class MVTecDataset(IadDataset):
                 if f.suffix in IMG_EXTENSIONS:
                     defect_type = f.parts[-2]  # e.g. "broken_large"
                     samples_list.append(
-                        (str(root), "test/generated_anomalies", defect_type, f.name)
+                        (str(root), "generated_anomalies", defect_type, f.name)
                     )
 
         else:
@@ -208,10 +208,9 @@ class MVTecDataset(IadDataset):
                     raise Exception(msg)
 
         if self.split == Split.TEST:
+            keep = ["test", "generated_anomalies"] if use_gen_anomalies else ["test"]
             # include both test and test/generated_anomalies
-            self.samples = samples[samples.split.str.startswith("test")].reset_index(
-                drop=True
-            )
+            self.samples = samples[samples.split.isin(keep)].reset_index(drop=True)
         else:
             self.samples = samples[samples.split == self.split].reset_index(drop=True)
 
@@ -255,10 +254,11 @@ class MVTecDataset(IadDataset):
             # return also the label, the mask and the path
             label = self.samples.iloc[index].label_index
             path = self.samples.iloc[index].image_path
-            if label == LabelName.ABNORMAL:
-                mask = Image.open(self.samples.iloc[index].mask_path).convert("L")
-                mask = self.transform_mask(mask)
+            mask_path = self.samples.iloc[index].mask_path
 
+            if label == LabelName.ABNORMAL and mask_path:
+                mask = Image.open(mask_path).convert("L")
+                mask = self.transform_mask(mask)
             else:
                 mask = torch.zeros(1, *self.gt_mask_size)
 

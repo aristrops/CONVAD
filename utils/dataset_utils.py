@@ -13,8 +13,9 @@ from scipy.stats import chi2_contingency
 
 from datasets.mvtec_dataset import MVTecDataset
 from datasets.realiad_dataset import RealIadDataset
+from datasets.visa_dataset import VisaDataset
 
-client = Client(host="http://localhost:6000")
+client = Client(host=os.environ.get("CLIENT_HOST", "http://localhost:6000"))
 
 #parse JSON object
 def extract_json(text):
@@ -122,6 +123,10 @@ def create_concept_list(dataset: str,
         full_dataset.load_dataset()
         subset = full_dataset.samples.groupby("label", group_keys=False).sample(frac = 0.05, random_state = 42)
 
+    elif dataset == "visa":
+        full_dataset = VisaDataset(root_path=dataset_path, category=category)
+        subset = full_dataset.samples.groupby("label", group_keys=False).sample(frac=0.05, random_state=42)
+
     print(f"Number of images to analyze: {len(subset)}")
 
     for i in tqdm(range(len(subset))):
@@ -131,16 +136,14 @@ def create_concept_list(dataset: str,
 
     concepts = list(concepts)
     print(f"Original number of concepts for {category} category:", len(concepts))
-    
-    if use_gen_anomalies:
-        output_dir = f"concept_lists/original/{dataset}gen_anomalies"
-    else:
-        output_dir = f"concept_lists/original/{dataset}"
-    os.makedirs(output_dir, exist_ok=True)
 
-    with open(os.path.join(output_dir, f"{category}_concepts.json"), "w") as f:
+    concepts_path = os.path.join(
+        dataset_path, category, "concepts_vocabulary", "raw",
+        f"concepts_vocab{'_gen' if use_gen_anomalies else ''}.json",
+    )
+    with open(concepts_path, "w") as f:
         json.dump(concepts, f)
-    
+
     return concepts
 
 
@@ -268,6 +271,10 @@ def create_final_dataset(dataset_path: str,
         dataset = RealIadDataset(root = dataset_path, category=category)
         dataset.load_dataset()
         samples = dataset.samples
+
+    elif dataset == "visa":
+        dataset = VisaDataset(root_path=dataset_path, category=category)
+        samples = dataset.samples
     
     for i in tqdm(range(len(samples))):
         sample = samples.iloc[i]
@@ -294,9 +301,9 @@ def modify_columns(df):
 
 #split df into train, test and validation
 def split_dataframe(df, train_size = 0.8, test_size = 0.5):   
-    train_df, val_test_df = train_test_split(df, train_size = train_size, stratify=df["anomaly_type"], shuffle = True)
+    train_df, val_test_df = train_test_split(df, train_size = train_size, stratify=df["anomaly_type"], shuffle = True, random_state=42)
 
-    val_df, test_df = train_test_split(val_test_df, test_size=test_size, shuffle = True)
+    val_df, test_df = train_test_split(val_test_df, test_size=test_size, shuffle = True, random_state=42)
 
     train_df["split"] = "train"
     val_df["split"] = "val"
