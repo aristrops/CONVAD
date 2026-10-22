@@ -110,8 +110,7 @@ def train_model(category: str,
     imbalance_ratio_attr = train_dataset.find_class_imbalance("attributes")
 
     if model_type == "joint":
-        model = joint_model(num_attr=num_attr, use_relu=True, use_sigmoid=False,
-                            model_state_dict=state_dict)
+        model = joint_model(num_attr=num_attr, use_relu=True, use_sigmoid=False, model_state_dict=state_dict)
         # save train and val dataframe in the state dict
         model.train_df = pd.concat([train_dataset.df, val_dataset.df], ignore_index=True)
         model.to(device)
