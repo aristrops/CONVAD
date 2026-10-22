@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from torchvision.models import ResNet18_Weights, MobileNet_V2_Weights
 
 
 class End2EndModel(nn.Module):  # joint bottleneck
@@ -175,12 +176,14 @@ class BackboneModelFeatures(nn.Module):
 
         # load pretrained model
         if backbone == "resnet18":
-            base_model = models.resnet18(pretrained=pretrained)
+            weights = ResNet18_Weights.DEFAULT if pretrained else None
+            base_model = models.resnet18(weights=weights)
             self.feature_extractor = nn.Sequential(
                 *list(base_model.children())[:-2]
             )  # remove last AvgPool and FC layer
         elif backbone == "mobilenet_v2":
-            base_model = models.mobilenet_v2(pretrained=pretrained)
+            weights = MobileNet_V2_Weights.DEFAULT if pretrained else None
+            base_model = models.mobilenet_v2(weights=weights)
             self.feature_extractor = base_model.features
         else:
             raise ValueError(f"Unsupported backbone: {backbone}")

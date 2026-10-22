@@ -159,16 +159,11 @@ class CBMEvaluator:
         #avg_inference_time = total_inference_time / total_instances
 
         if self.bottleneck:
-            print(f"\nAccuracy of the concept prediction task: {accuracy_meter_attr.avg.item():.2f}")
-            print(f"AUC Score of the concept prediction task: {mean_auc:.2f}")
-            print(f"F1 Score of the concept prediction task: {f1_attr:.2f}")
+            print(f"Concept AUC = {mean_auc:.4f}, Concept F1 = {f1_attr:.4f}")
         else:
-            print(f"\nAUC Score of the main task: {auc_main:.2f}")
-            print(f"F1 Score of the main task: {f1_main:.2f} achieved at threshold {best_thresh_main:.2f}")
+            print(f"\nMain Task AUC = {auc_main:.4f}, Main Task F1 = {f1_main:.4f} (at threshold  = {best_thresh_main:.4f})")
             if self.concepts:
-                print(f"\nAccuracy of the concept prediction task: {accuracy_meter_attr.avg.item():.2f}")
-                print(f"AUC of the concept prediction task: {mean_auc:.2f}")
-                print(f"F1 Score of the concept prediction task: {f1_attr:.2f}")
+                print(f"Concept AUC = {mean_auc:.4f}, Concept F1 = {f1_attr:.4f}")
         
         #print(f"\nAverage inference time per instance: {avg_inference_time*1000:.4f} ms")
 

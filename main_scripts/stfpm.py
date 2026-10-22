@@ -37,8 +37,8 @@ def build_teacher_path(save_dir, use_gen_anomalies, contaminate, n_per_type, mod
 
     return teacher_path
 
-def build_student_path(save_dir, use_gen_anomalies, contaminate, n_per_type):
-    save_dir = os.path.join(save_dir, "stfpm")
+def build_student_path(save_dir, use_gen_anomalies, contaminate, n_per_type, model_type = "joint"):
+    save_dir = os.path.join(save_dir, "stfpm", model_type)
 
     if use_gen_anomalies:
         file_name = "unsupervised_model.pth"
@@ -80,18 +80,19 @@ def train_model(category: str,
         dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset.csv")
 
     dataframe = read_concept_csv(dataframe_path)
-    dataframe_original = read_concept_csv(dataframe_path_original)
+    dataframe_original = read_concept_csv(dataframe_path_original) if use_gen_anomalies else None
 
     save_dir = os.path.join(save_dir, category)
 
     #load trained CBM model (supervised, semi-supervised or unsupervised depending on the setting)
     teacher_path = build_teacher_path(save_dir, use_gen_anomalies, contaminate, n_per_type)
-    state_dict = torch.load(teacher_path)
+    state_dict = torch.load(teacher_path, weights_only=False)
     state_dict = {
         k.replace("first_model.", ""): v
         for k, v in state_dict.items()
         if k.startswith("first_model.")
     }
+    state_dict = {k: v for k, v in state_dict.items() if not k.startswith("fc_layers.")}
 
     #build student path for saving the model
     student_path = build_student_path(save_dir, use_gen_anomalies, contaminate, n_per_type)
@@ -101,7 +102,10 @@ def train_model(category: str,
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch_size, shuffle = True,
                                                    num_workers=8, pin_memory=True, persistent_workers=True)
 
-    val_dataset = ConceptDataset(dataframe_original, split = "val", use_attr=False, load_mask=True)
+    if use_gen_anomalies:
+        val_dataset = ConceptDataset(dataframe_original, split = "val", use_attr=False, load_mask=True)
+    else:
+        val_dataset = ConceptDataset(dataframe, split = "val", use_attr=False, load_mask=True)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size = batch_size, shuffle = False,
                                                  num_workers=8, pin_memory=True, persistent_workers=True)
 
@@ -205,13 +209,12 @@ def main():
     torch.manual_seed(args.seed)
     device = torch.device(args.device)
 
-    for category in args.categories:
-        if args.mode == "train":
-            train_model(category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size, args.optimizer, args.lr, args.epochs)
-        elif args.mode == "test":
-            test_model(category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size)
-        elif args.mode == "visualize":
-            test_model(category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size, evaluate_one=True, save_path_image = args.save_path_image)
+    if args.mode == "train":
+        train_model(args.category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size, args.optimizer, args.lr, args.epochs)
+    elif args.mode == "test":
+        test_model(args.category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size)
+    elif args.mode == "visualize":
+        test_model(args.category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device, args.batch_size, evaluate_one=True, save_path_image = args.save_path_image)
 
 if __name__ == "__main__":
     main()

@@ -10,7 +10,7 @@ def joint_model(num_attr, expand_dim = 0, freeze_parameters = False, use_relu = 
         else:
             print("Fine-tuning last layer of teacher model...")
 
-    print(f"Using {backbone} for concept extraction (no fusion)...")
+    #print(f"Using {backbone} for concept extraction (no fusion)...")
 
     model_2 = MLP(input_dim=num_attr, expand_dim=expand_dim)
     full_model = End2EndModel(model_1, model_2, use_relu, use_sigmoid)

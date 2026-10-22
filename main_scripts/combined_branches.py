@@ -125,7 +125,7 @@ def test_cbm(dataloader: str,
     model = joint_model(num_attr=num_attr, use_relu=True, use_sigmoid=False, model_state_dict=state_dict, mode="test")
     model.to(device)
 
-    evaluator = CBMEvaluator(model, num_attr, attr_cols, dataloader, device)
+    evaluator = CBMEvaluator(model, num_attr, attr_cols, dataloader, device, concepts=True)
     auc_main, f1_main, auc_attr, f1_attr, main_preds, image_scores = evaluator.evaluate(return_scores=True)
 
     return auc_main, auc_attr, image_scores
@@ -171,13 +171,6 @@ def evaluate_combined_performance(category: str,
     cbm_path = teacher_path = build_path(save_dir, "cbm", use_gen_anomalies, contaminate, n_per_type)
     student_path = build_path(save_dir, "stfpm", use_gen_anomalies, contaminate, n_per_type)
 
-    size_info = compute_model_size_mb(cbm_path, student_path)
-
-    print(f"\n── Model sizes ──")
-    print(f"  Concept / Teacher : {size_info[cbm_path]:.2f} MB  (shared, counted once)")
-    print(f"  Student       : {size_info[student_path]:.2f} MB")
-    print(f"  Total         : {size_info['total_mb']:.2f} MB")
-
     if use_gen_anomalies:
         dataframe_path = os.path.join(dataset_path, category, "concepts", f"{category}_dataset_gen_to_real.csv")
     else:
@@ -189,24 +182,24 @@ def evaluate_combined_performance(category: str,
     stfpm_val_dl, cbm_val_dl, num_attr, attr_cols = make_dataloaders(dataframe, "val", batch_size)
  
     y_val = get_labels(dataframe, "val")
-    print(f" Val images: {len(y_val)}  (anomalous: {y_val.sum()})")
+    print(f"Val images: {len(y_val)} (anomalous: {y_val.sum()})")
 
     print("\nBuilding test dataloaders...")
     stfpm_test_dl, cbm_test_dl, num_attr, attr_cols = make_dataloaders(dataframe, "test", batch_size)
  
     y_true = get_labels(dataframe, "test")
-    print(f" Test images: {len(y_true)}  (anomalous: {y_true.sum()})")
+    print(f"Test images: {len(y_true)} (anomalous: {y_true.sum()})")
 
-    print("\nEvaluating STFPM model on validation set")
+    print("\nEvaluating STFPM model on validation set...")
     _, _, scores_stfpm_val = test_stfpm(stfpm_val_dl, teacher_path, student_path, device)
 
     print("\nEvaluating CBM model on validation set...")
     _, _, scores_cbm_val = test_cbm(cbm_val_dl, cbm_path, num_attr, attr_cols, device)
 
-    print("\nEvaluating STFPM model on TEST set…")
+    print("\nEvaluating STFPM model on test set…")
     auc_stfpm, pixel_auc_stfpm, scores_stfpm = test_stfpm(stfpm_test_dl, teacher_path, student_path, device)
 
-    print("\nEvaluating CBM model on TEST set…")
+    print("\nEvaluating CBM model on test set…")
     auc_cbm, concept_auc_cbm, scores_cbm = test_cbm(cbm_test_dl, cbm_path, num_attr, attr_cols, device)
  
     #rank-normalize (val)
@@ -235,59 +228,46 @@ def evaluate_combined_performance(category: str,
     agree = pred_cbm_test == pred_stfpm_test
     cbm_only_anom = (pred_cbm_test == 1) & (pred_stfpm_test == 0)
  
-    print(f"\n── Branch agreement on test set")
-    print(f"Agree (both normal)   : "
-          f"{((pred_cbm_test==0)&(pred_stfpm_test==0)).sum():>4d}  "
+    print(f"\n──── Branch agreement on test set ────")
+    print(f"Agree (both normal): "
+          f"{((pred_cbm_test==0)&(pred_stfpm_test==0)).sum()}  "
           f"({((pred_cbm_test==0)&(pred_stfpm_test==0)).mean()*100:.1f}%)")
-    print(f"Agree (both anomaly)  : "
-          f"{((pred_cbm_test==1)&(pred_stfpm_test==1)).sum():>4d}  "
+    print(f"Agree (both anomaly): "
+          f"{((pred_cbm_test==1)&(pred_stfpm_test==1)).sum()}  "
           f"({((pred_cbm_test==1)&(pred_stfpm_test==1)).mean()*100:.1f}%)")
-    print(f"CBM-only anomaly      : "
-          f"{cbm_only_anom.sum():>4d}  ({cbm_only_anom.mean()*100:.1f}%)")
-    print(f"STFPM-only anomaly    : "
-          f"{stfpm_only_anomaly.sum():>4d}  ({stfpm_only_anomaly.mean()*100:.1f}%)")
+    print(f"CBM-only anomaly: "
+          f"{cbm_only_anom.sum()}  ({cbm_only_anom.mean()*100:.1f}%)")
+    print(f"STFPM-only anomaly: "
+          f"{stfpm_only_anomaly.sum()}  ({stfpm_only_anomaly.mean()*100:.1f}%)")
  
-    print(f"\nCBM dominance breakdown by ground-truth class")
+    print(f"\n──── CBM dominance breakdown by ground-truth class ────")
     for lbl, name in [(0, "Normal"), (1, "Anomalous")]:
         mask = y_true == lbl
         if mask.sum() == 0:
             continue
         n_cbm_driven = (~stfpm_only_anomaly[mask]).sum()
         pct          = n_cbm_driven / mask.sum() * 100
-        print(f"{name:10s}: CBM drives score in "
+        print(f"{name}: CBM drives score in "
               f"{n_cbm_driven}/{mask.sum()} images ({pct:.1f}%)")
-
-    print(f"\n── Score statistics ─────────────────────────────────────────")
-    print(f"  STFPM raw   : [{scores_stfpm.min():.4f}, {scores_stfpm.max():.4f}]")
-    print(f"  CBM raw     : [{scores_cbm.min():.4f},   {scores_cbm.max():.4f}]")
-    print(f"  STFPM rank  : [{scores_stfpm_rank.min():.4f}, {scores_stfpm_rank.max():.4f}]")
-    print(f"  CBM rank    : [{scores_cbm_rank.min():.4f},   {scores_cbm_rank.max():.4f}]")
-    print(f"  Combined    : [{combined_scores.min():.4f},   {combined_scores.max():.4f}]")
 
     auc_combined = roc_auc_score(y_true, combined_scores)
  
-    print(f"\n── STFPM branch ──────────────────────────────────────────────")
-    print(f"  Image AUC  : {auc_stfpm:.4f}")
-    print(f"  Pixel AUC  : {pixel_auc_stfpm:.4f}")
+    print(f"\n──── STFPM branch ────")
+    print(f"Image AUC: {auc_stfpm:.4f}")
+    print(f"Pixel AUC: {pixel_auc_stfpm:.4f}")
  
-    print(f"\n── CBM branch ────────────────────────────────────────────────")
-    print(f"  Image AUC  : {auc_cbm:.4f}")
-    print(f"  Concept AUC: {concept_auc_cbm:.4f}")
+    print(f"\n──── CBM branch ────")
+    print(f"Image AUC: {auc_cbm:.4f}")
+    print(f"Concept AUC: {concept_auc_cbm:.4f}")
  
-    print(f"\n── Combined (CBM-prioritised fusion) ─────────────────────────")
-    print(f"  Image AUC  : {auc_combined:.4f}")
- 
-    return {
-        "category":           category,
-        "stfpm_auc":          auc_stfpm,
-        "stfpm_pixel_auc":    pixel_auc_stfpm,
-        "cbm_auc":            auc_cbm,
-        "cbm_concept_auc":    concept_auc_cbm,
-        "combined_auc":       auc_combined,
-        "pct_agree":          agree.mean() * 100,
-        "pct_cbm_only_anom":  cbm_only_anom.mean() * 100,
-        "pct_stfpm_only_anom": stfpm_only_anomaly.mean() * 100,
-    }
+    print(f"\n──── Combined ────")
+    print(f"Image AUC: {auc_combined:.4f}")
+
+    size_info = compute_model_size_mb(cbm_path, student_path)
+    print(f"\n──── Model sizes ────")
+    print(f"Concept / Teacher: {size_info[cbm_path]:.2f} MB")
+    print(f"Student: {size_info[student_path]:.2f} MB")
+    print(f"Total: {size_info['total_mb']:.2f} MB")
  
 
 def main():
@@ -309,7 +289,7 @@ def main():
     torch.manual_seed(args.seed)
     device = torch.device(args.device)
 
-    results = evaluate_combined_performance(args.category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device)
+    evaluate_combined_performance(args.category, args.dataset_path, args.use_gen_anomalies, args.contaminate, args.n_per_type, args.save_dir, device)
 
  
 if __name__ == "__main__":
