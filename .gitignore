@@ -193,7 +193,6 @@ pyrightconfig.json
 .ionide
 
 # Ignore image files
-*.png
 *.jpg
 *.jpeg
 *.csv
@@ -212,5 +211,8 @@ plots.ipynb
 
 # ignore Wandb runs
 wandb/
+
+# ignore dataset
+CONVAD-MVTec/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode

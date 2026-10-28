@@ -1,12 +1,9 @@
 python -m main_scripts.cbm \
-    --dataframe_path cbm_data/visa/candle_dataset_automated.csv \
-    --model_type joint \
-    --save_dir cbm_models/visa/candle_models \
-    --category candle \
-    --device cpu \
-    --backbone mobilenet_v2 \
-    --model_path cbm_models/backbones/fine-tuned-mobilenet-visa.pth \
-    --use_concepts \
-    --gemini_logo_mask_path datasets/gemini_logo_mask.png \
     --mode train \
-    --lambda_ 0.55
+    --dataset_path CONVAD-MVTec \
+    --model_type joint \
+    --save_dir cbm_models \
+    --category bottle \
+    --device cpu \
+    --model_path cbm_models/backbone/fine-tuned-mobilenet.pth \
+    --gemini_logo_mask_path datasets/gemini_logo_mask.png

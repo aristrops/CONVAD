@@ -302,7 +302,7 @@ def main():
                         help="Semi-supervised scenario: contaminate the generated dataset with some original anomalous samples")
     parser.add_argument("--n_per_type", type=int, default=0,
                         help="How many original images to add to the generated dataset")
-    parser.add_argument("--model_type", type=str, nargs="+",
+    parser.add_argument("--model_type", type=str, default="joint",
                         help="Which model to train, e.g. 'independent', 'joint', ...")
     parser.add_argument("--save_dir", type=str, default=None, help = "Directory to save the models in")
     parser.add_argument("--category", type=str, help="Which category to train/test")
@@ -328,39 +328,38 @@ def main():
     torch.manual_seed(args.seed)
     device = torch.device(args.device)
 
-    for model_type in args.model_type:
-        model_save_dir = os.path.join(args.save_dir, args.category, "cbm", model_type) if args.save_dir else None
+    model_save_dir = os.path.join(args.save_dir, args.category, "cbm", args.model_type) if args.save_dir else None
 
-        if args.mode == "train":
-            os.makedirs(model_save_dir, exist_ok=True) if args.save_dir else None
-            train_model(category=args.category,
-                        dataset_path=args.dataset_path,
-                        use_gen_anomalies=args.use_gen_anomalies,
-                        contaminate=args.contaminate,
-                        n_per_type=args.n_per_type,
-                        model_type=model_type,
-                        save_dir=model_save_dir,
-                        device=device,
-                        lambda_=args.lambda_,
-                        batch_size=args.batch_size,
-                        optimizer=args.optimizer,
-                        lr=args.lr,
-                        epochs=args.epochs,
-                        model_path=args.model_path,
-                        save_path_pred_concepts=args.save_path_pred_concepts,
-                        seed=args.seed)
-        else:
-            auc_main, auc_attr, f1_main, f1_attr = test_model(category=args.category,
-                                                              dataset_path=args.dataset_path,
-                                                              use_gen_anomalies=args.use_gen_anomalies,
-                                                              contaminate=args.contaminate,
-                                                              n_per_type=args.n_per_type,
-                                                              model_type=model_type,
-                                                              save_dir=model_save_dir,
-                                                              device=device,
-                                                              batch_size=args.batch_size,
-                                                              mode=args.mode,
-                                                              image_path=args.image_path)
+    if args.mode == "train":
+        os.makedirs(model_save_dir, exist_ok=True) if args.save_dir else None
+        train_model(category=args.category,
+                    dataset_path=args.dataset_path,
+                    use_gen_anomalies=args.use_gen_anomalies,
+                    contaminate=args.contaminate,
+                    n_per_type=args.n_per_type,
+                    model_type=args.model_type,
+                    save_dir=model_save_dir,
+                    device=device,
+                    lambda_=args.lambda_,
+                    batch_size=args.batch_size,
+                    optimizer=args.optimizer,
+                    lr=args.lr,
+                    epochs=args.epochs,
+                    model_path=args.model_path,
+                    save_path_pred_concepts=args.save_path_pred_concepts,
+                    seed=args.seed)
+    else:
+        auc_main, auc_attr, f1_main, f1_attr = test_model(category=args.category,
+                                                          dataset_path=args.dataset_path,
+                                                          use_gen_anomalies=args.use_gen_anomalies,
+                                                          contaminate=args.contaminate,
+                                                          n_per_type=args.n_per_type,
+                                                          model_type=args.model_type,
+                                                          save_dir=model_save_dir,
+                                                          device=device,
+                                                          batch_size=args.batch_size,
+                                                          mode=args.mode,
+                                                          image_path=args.image_path)
 
 
 if __name__ == "__main__":

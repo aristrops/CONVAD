@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CONVAD – Explainable Visual Anomaly Detection via Concept Bottleneck Models</title>
+  <meta name="description" content="Project page of the paper: Explainable Visual Anomaly Detection via Concept Bottleneck Models">
+  <meta name="keywords" content="Anomaly Detection, Concept Bottleneck Models, Explainable AI, Computer Vision">
+  <meta name="author" content="Arianna Stropeni, Valentina Zaccaria, Francesco Borsatti, Davide Dalle Pezze, Manuel Barusco, Gian Antonio Susto">
+  <meta name="theme-color" content="#163e64">
+
+  <!-- Social preview: replace YOUR_USER / YOUR_REPO and add static/images/social_preview.png (1200x630) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="CONVAD – Explainable Visual Anomaly Detection via Concept Bottleneck Models">
+  <meta property="og:description" content="Concept-level and pixel-level explanations for visual anomaly detection.">
+  <meta property="og:image" content="https://aristrops.github.io/convad/static/images/social_preview.png">
+  <meta property="og:url" content="https://aristrops.github.io/convad/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #1f2937; --muted: #6b7280; --accent: #2563eb;
+      --soft: #f3f4f6; --border: #e5e7eb; --good: #15803d; --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65; font-size: 17px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px; }
+    .wide { max-width: 1100px; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 64px 0 24px; }
+    .hero h1 { font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.2; margin: 0 0 24px; font-weight: 700; }
+    .hero h1 .name { color: var(--accent); }
+    .authors { font-size: 1.05rem; margin-bottom: 6px; }
+    .authors span { display: inline-block; margin: 0 10px; white-space: nowrap; }
+    .affil { color: var(--muted); font-size: .98rem; }
+    .venue { margin-top: 10px; font-weight: 600; }
+    .buttons { margin: 26px 0 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; border-radius: 999px;
+      background: #111827; color: #fff; font-weight: 500; font-size: .95rem;
+    }
+    .btn:hover { background: var(--accent); text-decoration: none; }
+    .btn.disabled { background: #9ca3af; pointer-events: none; }
+
+    section { padding: 34px 0; }
+    h2 { font-size: 1.75rem; text-align: center; margin: 0 0 22px; }
+    h3 { font-size: 1.2rem; margin: 26px 0 8px; }
+    p { margin: 0 0 14px; }
+    .tldr {
+      background: var(--soft); border-left: 4px solid var(--accent); padding: 14px 18px;
+      border-radius: 6px; margin: 22px auto 0;
+    }
+
+    figure { margin: 22px 0; text-align: center; }
+    figure img { max-width: 100%; height: auto; border-radius: 6px; }
+    figcaption { color: var(--muted); font-size: .92rem; margin-top: 8px; text-align: left; }
+    .placeholder {
+      display: none; border: 2px dashed var(--border); border-radius: 8px; padding: 36px 16px;
+      color: var(--muted); font-size: .9rem;
+    }
+    figure.missing img { display: none; }
+    figure.missing .placeholder { display: block; }
+
+    .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 18px 0; }
+    .card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: #fff; }
+    .card h4 { margin: 0 0 6px; font-size: 1.02rem; }
+    .card p { margin: 0; font-size: .95rem; color: #374151; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin: 22px 0; }
+    .stat { text-align: center; border: 1px solid var(--border); border-radius: 10px; padding: 16px 10px; }
+    .stat .num { font-size: 1.9rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat .lbl { font-size: .86rem; color: var(--muted); margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 14px 0 6px; }
+    th, td { padding: 7px 10px; text-align: center; border-bottom: 1px solid var(--border); }
+    th { background: var(--soft); font-weight: 600; }
+    td:first-child, th:first-child { text-align: left; }
+    td.best { font-weight: 700; color: var(--accent); }
+    :root { --divider: #cbd5e1; }
+    th.sep, td.sep { border-left: 2px solid var(--divider); }
+    .tbl-wrap { overflow-x: auto; }
+    .note { font-size: .88rem; color: var(--muted); }
+
+    pre.bibtex {
+      background: #0f172a; color: #e2e8f0; padding: 18px; border-radius: 8px; overflow-x: auto;
+      font-size: .85rem; line-height: 1.5; position: relative;
+    }
+    .copy {
+      position: absolute; top: 10px; right: 10px; background: #1e293b; color: #e2e8f0; border: 0;
+      border-radius: 6px; padding: 5px 12px; font-size: .8rem; cursor: pointer;
+    }
+    .copy:hover { background: var(--accent); }
+
+    footer { border-top: 1px solid var(--border); margin-top: 30px; padding: 28px 0 50px; text-align: center; color: var(--muted); font-size: .88rem; }
+    ul.tight { padding-left: 20px; margin: 0 0 14px; }
+    ul.tight li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- ========== HERO ========== -->
+<header class="hero">
+  <div class="wrap wide">
+    <h1>CONVAD</span>: Explainable Visual Anomaly Detection<br>via Concept Bottleneck Models</h1>
+
+    <div class="authors">
+      <span>Arianna Stropeni</span>
+      <span>Valentina Zaccaria</span>
+      <span>Francesco Borsatti</span>
+      <span>Davide Dalle Pezze</span>
+      <span>Manuel Barusco</span>
+      <span>Gian Antonio Susto</span>
+    </div>
+    <div class="affil">University of Padova, Italy</div>
+    <div class="venue">BMVC 2026</div> 
+
+    <div class="buttons">
+      <a class="btn" href="static/pdfs/paper.pdf">📄 Paper</a>
+      <a class="btn" href="https://github.com/aristrops/CONVAD">💻 Code</a>          
+      <a class="btn" href="https://huggingface.co/datasets/aristrops/mvtec-concepts">🤗 MVTec Concept Dataset</a> 
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ========== TEASER ========== -->
+<section style="padding-top:8px">
+  <div class="wrap wide">
+    <figure id="fig-teaser">
+      <img src="static/images/teaser.png" alt="CONVAD architecture and example output" onerror="this.parentElement.classList.add('missing')">
+      <div class="placeholder">Add <code>static/images/teaser.png</code> (Figure 1 of the paper: architecture + example output)</div>
+      <figcaption><b>Left:</b> CONVAD architecture. <b>Right:</b> example output: input image, anomaly heatmap, most active/inactive concepts, and the final prediction.</figcaption>
+    </figure>
+    <div class="wrap">
+      <div class="tldr"><b>TL;DR:</b> CONVAD brings Concept Bottleneck Models to Visual Anomaly Detection. It explains <i>what</i> is anomalous with human-readable concepts and <i>where</i> with a pixel-level heatmap, matches classic VAD methods in performance (up to 0.97 I-AUROC on MVTec AD), and lets experts correct concepts at test time.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ABSTRACT ========== -->
+<section>
+  <div class="wrap">
+    <h2>Abstract</h2>
+    <p>In recent years, Visual Anomaly Detection (VAD) has attracted significant attention due to its high interpretability, as it provides visual explanations by highlighting anomalous regions within an image. However, although these visual explanations can be helpful, they lack a direct and semantically meaningful interpretation for users. To address this limitation, we propose extending Concept Bottleneck Models (CBMs) to the VAD setting. By learning meaningful concepts, the network can provide human-interpretable descriptions of anomalies, offering a novel and more insightful way to explain them.</p>
+    <p>Our main contributions are: (i) we introduce a concept-based framework for anomaly explanation by extending CBMs to the VAD setting for the first time; (ii) we evaluate multiple supervision regimes, ranging from supervised to unsupervised anomaly settings; (iii) we propose a dual-branch architecture that combines a CBM-based Concept branch for concept-level explanations with a Visual branch for pixel-level anomaly localization, bridging semantic and spatial interpretability. When evaluated across three well-established VAD benchmarks, our approach, Concept-Aware Visual Anomaly Detection (CONVAD), achieves performance comparable to classic VAD methods (up to 0.97 I-AUROC on MVTec AD) while providing richer, concept-driven explanations. A user study (582 responses) shows that CONVAD explanations are rated effective in 73.5% of cases (vs. 60.7% for the SOTA VLM-based explainer Anomaly-OV) and misleading in only 3.1% (vs. 11.7%). Beyond explanation quality, CBMs enable human-in-the-loop correction: concept-level interventions further boost detection in the challenging unsupervised setting, closing part of the gap to fully supervised performance.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="num">0.97</div><div class="lbl">I-AUROC on MVTec AD<br>(supervised)</div></div>
+      <div class="stat"><div class="num">73.5%</div><div class="lbl">explanations rated effective<br>(Anomaly-OV: 60.7%)</div></div>
+      <div class="stat"><div class="num">3.1%</div><div class="lbl">misleading explanations<br>(Anomaly-OV: 11.7%)</div></div>
+      <div class="stat"><div class="num">17.6 MB</div><div class="lbl">memory footprint<br>(AnomalyGPT: ~30 GB)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CONTRIBUTIONS ========== -->
+<section>
+  <div class="wrap">
+    <h2>Contributions</h2>
+    <div class="grid3">
+      <div class="card"><h4>1 · CBMs for VAD</h4><p>The first adaptation of Concept Bottleneck Models to Visual Anomaly Detection, with an automated VLM-based pipeline that builds concept-annotated datasets for MVTec AD, VisA and Real-IAD.</p></div>
+      <div class="card"><h4>2 · Supervision regimes</h4><p>Supervised, semi-supervised (one real anomaly per defect type) and unsupervised (synthetic anomalies only) settings, quantifying the trade-off between labeling effort and performance.</p></div>
+      <div class="card"><h4>3 · Dual-branch design</h4><p>A Concept branch for semantic explanations plus a student–teacher Visual branch for pixel-level heatmaps, sharing one feature extractor.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CONCEPT DATASET ========== -->
+<section>
+  <div class="wrap">
+    <h2>Building a Concept Dataset for VAD</h2>
+    <p>CBMs need images annotated with concepts from a predefined vocabulary, and no such dataset exists for VAD. We build one with a VLM-based pipeline:</p>
+    <ul class="tight">
+      <li><b>Context-aware list creation.</b> On a 5% sample covering all defect types, a VLM (Gemma 3) first describes each image, given the object category and defect type, then extracts up to five visual concepts.</li>
+      <li><b>Grouping and filtering.</b> Related concepts are merged (from hundreds down to fewer than fifty), and near-duplicates are removed using CLIP text-embedding similarity.</li>
+      <li><b>Automatic annotation.</b> Every image receives binary concept labels from the VLM. Against 400 manually annotated images, the pipeline reaches 91.3% accuracy.</li>
+    </ul>
+    <figure id="fig-pipeline">
+      <img src="static/images/concept_pipeline.png" alt="Concept dataset creation pipeline" onerror="this.parentElement.classList.add('missing')">
+      <div class="placeholder">Add <code>static/images/concept_pipeline.png</code> (Figure 2: concept dataset pipeline)</div>
+      <figcaption>Pipeline for creating the Concept Dataset through VLM-based concept annotation.</figcaption>
+    </figure>
+    <figure id="fig-vocab">
+      <img src="static/images/concept_distribution_hazelnut.png" alt="Concept distribution for MVTec hazelnut" onerror="this.parentElement.classList.add('missing')">
+      <div class="placeholder">Add <code>static/images/concept_distribution_hazelnut.png</code> (Figure 3: hazelnut concept distribution)</div>
+      <figcaption>Concept vocabulary and distribution across defect types for MVTec hazelnut category. Concepts are not tied to a single class: classification relies on their joint interactions.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ========== METHOD ========== -->
+<section>
+  <div class="wrap">
+    <h2>CONVAD</h2>
+    <p>CONVAD has two branches that share a feature extractor (MobileNet-v2), which encourages consistency between semantic and spatial explanations.</p>
+    <div class="grid3">
+      <div class="card"><h4>Concept branch</h4><p>A CBM trained jointly end-to-end to predict concepts and the anomaly label. The ranked per-concept contributions form the explanation. Experts can correct concept activations at test time without retraining.</p></div>
+      <div class="card"><h4>Visual branch</h4><p>A student network trained on normal samples only to match the frozen Concept-branch features. The feature discrepancy yields a pixel-level anomaly heatmap.</p></div>
+      <div class="card"><h4>Score fusion</h4><p>The final score is the max of the calibrated visual decision and the concept probability. The Concept branch drives 88–91% of predictions, so most detections come with concept explanations.</p></div>
+    </div>
+
+    <h3>Synthetic anomalies</h3>
+    <p>To reduce reliance on real defects, we generate realistic anomalies by prompting an image-editing model (Gemini 2.5 Flash Image) to add a given defect to a normal image while preserving pose and view. This enables the semi-supervised and unsupervised regimes.</p>
+    <figure id="fig-synth">
+      <img src="static/images/synthetic_examples.png" alt="Examples of synthetic anomalous images" onerror="this.parentElement.classList.add('missing')">
+      <div class="placeholder">Add <code>static/images/synthetic_examples.png</code> (Supplementary Fig. 6: well-generated synthetic anomalies)</div>
+      <figcaption>Examples of generated anomalies.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ========== RESULTS ========== -->
+<section>
+  <div class="wrap">
+    <h2>Results</h2>
+
+    <h3>Comparison across supervision regimes (MVTec AD)</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">Metric</th>
+        <th class="sep">Zero-shot</th>
+        <th class="sep" colspan="5">Unsupervised (zero-anomaly-shot)</th>
+        <th class="sep" colspan="3">Semi-supervised</th>
+        <th class="sep" colspan="2">Supervised</th>
+      </tr>
+      <tr>
+        <th class="sep">Anomaly-OV</th>
+        <th class="sep">CONVAD</th><th>PatchCore</th><th>STFPM</th><th>Tiny-Dinomaly</th><th>AnomalyGPT</th>
+        <th class="sep">CONVAD</th><th>DevNet</th><th>DRA</th>
+        <th class="sep">CONVAD</th><th>UNet</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>I-AUC</td><td class="sep">0.94</td><td class="sep">0.81</td><td>0.86</td><td>0.88</td><td>0.91</td><td class="best">0.97</td><td class="best sep">0.87</td><td>0.80</td><td>0.76</td><td class="best sep">0.96</td><td>0.65</td></tr>
+      <tr><td>P-AUC</td><td class="sep">–</td><td class="sep">0.91</td><td class="best">0.96</td><td>0.88</td><td class="best">0.96</td><td>0.93</td><td class="best sep">0.92</td><td class="best">0.92</td><td>–</td><td class="best sep">0.95</td><td>0.77</td></tr>
+      <tr><td>C-AUC</td><td class="sep">–</td><td class="best sep">0.73</td><td>–</td><td>–</td><td>–</td><td>–</td><td class="best sep">0.72</td><td>–</td><td>–</td><td class="best sep">0.86</td><td>–</td></tr>
+      <tr><td>Memory [MB]</td><td class="sep">1,768</td><td class="sep">17.6</td><td>38.4</td><td class="best">11.1</td><td>36.5</td><td>30,520</td><td class="best sep">17.6</td><td>44.7</td><td>44.7</td><td class="sep">17.6</td><td class="best">10.3</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="note">I-AUC / P-AUC / C-AUC: image-, pixel- and concept-level AUROC. “–”: the method cannot produce this output.</p>
+    <p>In the supervised and semi-supervised settings CONVAD outperforms the compared baselines. In the unsupervised setting, higher-scoring methods come with trade-offs: AnomalyGPT needs over 30 GB of memory, and Anomaly-OV produces no pixel-level heatmaps. CONVAD delivers concept explanations, heatmaps and scores in 17.6 MB.</p>
+
+
+    <h3>User study: are the explanations useful?</h3>
+    <p>32 participants judged 582 explanations on MVTec and VisA images. An explanation is <i>effective</i> if it helps the user verify whether the prediction is right, and <i>misleading</i> if it convinces them to trust a wrong prediction.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Signal</th><th>AnomalyGPT</th><th>Anomaly-OV</th><th>CONVAD</th></tr></thead>
+        <tbody>
+          <tr><td>Effective ↑</td><td>33.2%</td><td>60.7%</td><td class="best">73.5%</td></tr>
+          <tr><td>Misleading ↓</td><td>18.4%</td><td>11.7%</td><td class="best">3.1%</td></tr>
+          <tr><td>Useless ↓</td><td>48.4%</td><td>27.6%</td><td class="best">23.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The tight coupling between concept scores and the prediction, as opposed to post-hoc verbalization by VLMs, helps keep errors from being hidden behind plausible-sounding text.</p>
+  </div>
+</section>
+
+<!-- ========== BIBTEX ========== -->
+<section>
+  <div class="wrap">
+    <h2>BibTeX</h2>
+    <pre class="bibtex" id="bibtex"><button class="copy" onclick="copyBib(this)">Copy</button>@article{stropeni2025explainable,
+  title={Explainable Visual Anomaly Detection via Concept Bottleneck Models},
+  author={Stropeni, Arianna and Zaccaria, Valentina and Borsatti, Francesco and Pezze, Davide Dalle and Barusco, Manuel and Susto, Gian Antonio},
+  journal={arXiv preprint arXiv:2511.20088},
+  year={2025}
+}</pre>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Page layout inspired by the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template">Academic Project Page Template</a>, adapted from the <a href="https://nerfies.github.io">Nerfies</a> project page.
+    Licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+  </div>
+</footer>
+
+<script>
+  function copyBib(btn) {
+    var pre = document.getElementById('bibtex');
+    var text = pre.innerText.replace(/^Copy\s*/, '');
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    });
+  }
+</script>
+</body>
+</html>
