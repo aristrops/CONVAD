@@ -2,7 +2,7 @@
 
 # Explainable Visual Anomaly Detection<br>via Concept Bottleneck Models
 
-[🌐 Project page](https://aristrops.github.io/convad/) · [📄 Paper](https://arxiv.org/abs/2511.20088)
+[🌐 Project page](https://aristrops.github.io/CONVAD/) · [📄 Paper](https://arxiv.org/abs/2511.20088)
 
 </div>
 This repository contains the code for our work "Explainable Visual Anomaly Detection via Concept Bottleneck Models", through which we try to enhance interpretability in Industrial Visual Anomaly Detection (VAD) by employing Concept Bottleneck Models (CBMs), i.e. neural models that learn meaningful concepts and thus can provide human-understandable descriptions of anomalies and defects. 
